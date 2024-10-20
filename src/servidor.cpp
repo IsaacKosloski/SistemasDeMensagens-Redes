@@ -52,6 +52,25 @@ void removerCliente(struct sockaddr_in cliente) {
         }
     }
 }
+// Função para enviar mensagem de erro.
+void enviarErro(int server_socket, struct sockaddr_in client_addr, socklen_t addr_len, const char *mensagemErro) {
+    Mensagem msg;
+    msg.tipo = 3;  // ERRO
+    msg.remetente = 0;  
+    msg.destinatario = 0;  
+    msg.tamanho_texto = strlen(mensagemErro);
+    strncpy(msg.texto, mensagemErro, sizeof(msg.texto) - 1);
+    msg.texto[sizeof(msg.texto) - 1] = '\0';  // Garante terminação correta da string
+
+    sendto(
+        server_socket,
+        &msg,
+        sizeof(msg),
+        0,
+        (struct sockaddr*)&client_addr,
+        addr_len
+    );
+}
 
 // Função principal do servidor
 void servidor() {
@@ -60,7 +79,7 @@ void servidor() {
     socklen_t addr_len = sizeof(client_addr);
     struct Mensagem msg;
 
-    // Criar socket UDP
+    // Cria socket UDP
     if ((server_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         std::cerr << "Erro ao criar socket!" << std::endl;
         exit(EXIT_FAILURE);
@@ -107,7 +126,13 @@ void servidor() {
                 enviarMensagemParaTodos(server_socket, msg);
             }
         }
+
+        else {
+        std::cout << "Erro: Tipo de mensagem desconhecido (" << msg.tipo << ")." << std::endl;
+        enviarErro(server_socket, client_addr, addr_len, "Tipo de mensagem desconhecido.");
     }
+
+}
 
     close(server_socket);
 }
